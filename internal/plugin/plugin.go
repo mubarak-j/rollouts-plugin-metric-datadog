@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -25,6 +26,7 @@ type RpcPlugin struct {
 	LogCtx              log.Entry
 	resolver            *ddinternal.Resolver
 	controllerNamespace string
+	limiter             *ddinternal.Limiter
 
 	// indirections (overridable in tests)
 	selectSource func(*config.Config) (datasource.DataSource, error)
@@ -40,6 +42,11 @@ func (g *RpcPlugin) InitPlugin() types.RpcError {
 	}
 	g.resolver = &ddinternal.Resolver{Secrets: getter, ControllerNamespace: ns}
 	g.controllerNamespace = ns
+	g.limiter = ddinternal.NewLimiter(ddinternal.LimiterOptions{
+		Enabled:       true,
+		DefaultRPS:    10,
+		MaxConcurrent: 16,
+	})
 	g.selectSource = datasource.Select
 	g.newClient = ddinternal.NewClient
 	return types.RpcError{}
@@ -76,6 +83,7 @@ func (g *RpcPlugin) Run(analysisRun *v1alpha1.AnalysisRun, metric v1alpha1.Metri
 
 	client, err := g.newClient(creds, ddinternal.ClientOptions{
 		Site: cfg.Site, Address: cfg.Address, Timeout: cfg.Timeout(),
+		Transport: g.transport(),
 	})
 	if err != nil {
 		return finish(metricutil.MarkMeasurementError(m, err))
@@ -129,6 +137,15 @@ func (g *RpcPlugin) GarbageCollect(_ *v1alpha1.AnalysisRun, _ v1alpha1.Metric, _
 }
 
 func (g *RpcPlugin) Type() string { return rolloutsPlugin.ProviderType }
+
+// transport returns the shared rate-limit RoundTripper, or nil when the limiter
+// is not initialised (e.g. test plugins built without InitPlugin).
+func (g *RpcPlugin) transport() http.RoundTripper {
+	if g.limiter == nil {
+		return nil
+	}
+	return g.limiter.Transport()
+}
 
 // finish stamps FinishedAt on a Measurement if not already set.
 func finish(m v1alpha1.Measurement) v1alpha1.Measurement {
