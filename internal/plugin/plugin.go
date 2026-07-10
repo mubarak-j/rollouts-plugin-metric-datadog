@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	rolloutsPlugin "github.com/argoproj/argo-rollouts/metricproviders/plugin"
@@ -27,6 +28,7 @@ type RpcPlugin struct {
 	resolver            *ddinternal.Resolver
 	controllerNamespace string
 	limiter             *ddinternal.Limiter
+	cache               *ddinternal.Cache
 
 	// indirections (overridable in tests)
 	selectSource func(*config.Config) (datasource.DataSource, error)
@@ -46,6 +48,10 @@ func (g *RpcPlugin) InitPlugin() types.RpcError {
 		Enabled:       true,
 		DefaultRPS:    10,
 		MaxConcurrent: 16,
+	})
+	g.cache = ddinternal.NewCache(ddinternal.CacheOptions{
+		Enabled: true,
+		TTL:     30 * time.Second,
 	})
 	g.selectSource = datasource.Select
 	g.newClient = ddinternal.NewClient
@@ -95,18 +101,33 @@ func (g *RpcPlugin) Run(analysisRun *v1alpha1.AnalysisRun, metric v1alpha1.Metri
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
 
-	res, err := ds.Query(ctx, client, cfg)
+	key := ds.Key(cfg) + "|site=" + cfg.Site + "|win=" + windowBucket(cfg, time.Now())
+	fresh := cfg.Cache != nil && cfg.Cache.Enabled != nil && !*cfg.Cache.Enabled
+
+	var value interface{}
+	var meta map[string]string
+	var src string
+	if g.cache != nil {
+		value, meta, src, err = g.cache.Do(ctx, key, fresh, func() (interface{}, map[string]string, error) {
+			r, e := ds.Query(ctx, client, cfg)
+			return r.Value, r.Metadata, e
+		})
+	} else {
+		var r datasource.Result
+		r, err = ds.Query(ctx, client, cfg)
+		value, meta, src = r.Value, r.Metadata, "fresh"
+	}
 	if err != nil {
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
 
-	phase, err := evaluate.EvaluateResult(res.Value, metric, g.LogCtx)
+	phase, err := evaluate.EvaluateResult(value, metric, g.LogCtx)
 	if err != nil {
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
 	m.Phase = phase
-	m.Value = stringify(res.Value)
-	m.Metadata = res.Metadata
+	m.Value = stringify(value)
+	m.Metadata = mergeMeta(meta, map[string]string{"cache": src})
 	return finish(m)
 }
 
@@ -154,6 +175,50 @@ func finish(m v1alpha1.Measurement) v1alpha1.Measurement {
 		m.FinishedAt = &t
 	}
 	return m
+}
+
+// mergeMeta merges base metadata with extra keys. extra keys overwrite base keys.
+func mergeMeta(base, extra map[string]string) map[string]string {
+	out := map[string]string{}
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range extra {
+		out[k] = v
+	}
+	return out
+}
+
+// windowBucket quantises now to the source's natural query interval, producing
+// a time-varying component for the cache key so cached entries roll forward as
+// the query window advances (§15.3 layer 3). The exact quantum is not
+// load-bearing — TTL bounds staleness — but the window component must be present.
+func windowBucket(cfg *config.Config, now time.Time) string {
+	q := 60 * time.Second // default for point-in-time sources (monitor, searches)
+	switch cfg.Source() {
+	case "metrics":
+		if d, err := time.ParseDuration(orDefault(cfg.Metrics.Interval, "5m")); err == nil && d > 0 {
+			q = d
+		}
+	case "slo":
+		if cfg.SLO != nil && cfg.SLO.ID != nil {
+			// by-id uses a history window (default 7d); time.ParseDuration doesn't
+			// accept "7d", so it falls back to the 60s default — correctness is
+			// unaffected (TTL bounds freshness).
+			if d, err := time.ParseDuration(cfg.SLO.Interval); err == nil && d > 0 {
+				q = d
+			}
+		}
+	}
+	return strconv.FormatInt(now.Truncate(q).Unix(), 10)
+}
+
+// orDefault returns s if non-empty, otherwise def.
+func orDefault(s, def string) string {
+	if s == "" {
+		return def
+	}
+	return s
 }
 
 // stringify renders a resolved value for Measurement.Value (display only;
