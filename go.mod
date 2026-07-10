@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.62.0 // indirect
+	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fatih/color v1.16.0 // indirect
