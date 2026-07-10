@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
@@ -48,6 +49,24 @@ func TestRun_ConfigErrorMapsToErrorPhase(t *testing.T) {
 	out := g.Run(&v1alpha1.AnalysisRun{}, m)
 	assert.Equal(t, v1alpha1.AnalysisPhaseError, out.Phase)
 	assert.Contains(t, out.Message, "exactly one")
+}
+
+func TestRun_CacheHitCallsSourceOnce(t *testing.T) {
+	cs := &countingSource{value: 0.99}
+	g := newTestPlugin(t, cs)
+	// Override with an enabled cache so the second Run() is a cache hit.
+	g.cache = ddinternal.NewCache(ddinternal.CacheOptions{Enabled: true, TTL: time.Hour})
+
+	m := metricWith(t, `{"metrics":{"query":"avg:cpu{*}"}}`)
+	m.SuccessCondition = "result >= 0.95"
+
+	out1 := g.Run(&v1alpha1.AnalysisRun{}, m)
+	require.Equal(t, v1alpha1.AnalysisPhaseSuccessful, out1.Phase, out1.Message)
+
+	out2 := g.Run(&v1alpha1.AnalysisRun{}, m)
+	require.Equal(t, v1alpha1.AnalysisPhaseSuccessful, out2.Phase, out2.Message)
+	assert.Equal(t, "cached", out2.Metadata["cache"])
+	assert.Equal(t, 1, cs.calls) // source called exactly once; second Run is a cache hit
 }
 
 func TestRun_MetricsConditionAgainstRealServer(t *testing.T) {
