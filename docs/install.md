@@ -114,6 +114,6 @@ subjects:
     namespace: argo-rollouts
 roleRef:
   kind: Role
-  apiRef: rbac.authorization.k8s.io
+  apiGroup: rbac.authorization.k8s.io
   name: argo-rollouts-secret-reader
 ```

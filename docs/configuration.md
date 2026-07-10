@@ -147,7 +147,7 @@ slo:
 
 **Search mode** (no `id`): calls `SearchSLO` with a query built from `tags` joined with `slo.query`. Result is `{slos: [...], facets: {...}}` where each element of `slos` is the SLO attributes object.
 
-**By-id mode** (`id` set): calls `GetSLOHistory` over the configured `interval`. Result is the scalar SLI value (`float64`).
+**By-id mode** (`id` set): calls `GetSLOHistory` over the configured `interval`. Result is the scalar SLI value (`float64`). Tags must be empty in this mode.
 
 **Result shape (search):**
 
@@ -189,8 +189,8 @@ The plugin emits a log warning (surfaced by `Config.Warnings()`) when a monitor 
 | Field | Default |
 |---|---|
 | `rateLimit.enabled` | `true` |
-| `rateLimit.budgetFraction` | `0.5` (50% of reported Datadog limit) |
-| `rateLimit.maxConcurrent` | `16` |
+| `rateLimit.budgetFraction` | `0.5` (50% of reported Datadog limit) (applied by the limiter layer at runtime, not by config defaulting — holds even when omitted or zero) |
+| `rateLimit.maxConcurrent` | `16` (applied by the limiter layer at runtime, not by config defaulting — holds even when omitted or zero) |
 | `cache.enabled` | `true` |
 | `cache.ttl` | `30s` |
 | `retry.maxRetries` | `3` |
