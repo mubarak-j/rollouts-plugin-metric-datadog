@@ -2,12 +2,16 @@ package plugin
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/mubarak-j/rollouts-plugin-metric-datadog/internal/config"
+	ddinternal "github.com/mubarak-j/rollouts-plugin-metric-datadog/internal/datadog"
 	"github.com/mubarak-j/rollouts-plugin-metric-datadog/internal/datasource"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,4 +48,31 @@ func TestRun_ConfigErrorMapsToErrorPhase(t *testing.T) {
 	out := g.Run(&v1alpha1.AnalysisRun{}, m)
 	assert.Equal(t, v1alpha1.AnalysisPhaseError, out.Phase)
 	assert.Contains(t, out.Message, "exactly one")
+}
+
+func TestRun_MetricsConditionAgainstRealServer(t *testing.T) {
+	// Guard against ambient DD_* env vars (note B): this plugin builds directly
+	// without newTestPlugin, so we must set them ourselves.
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_APP_KEY", "")
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"data":{"attributes":{"columns":[{"type":"number","values":[0.99]}]}}}`))
+	}))
+	defer ts.Close()
+
+	g := &RpcPlugin{
+		LogCtx:   *log.WithField("test", t.Name()),
+		resolver: &ddinternal.Resolver{Secrets: stubSecrets{}, ControllerNamespace: "argo-rollouts"},
+		selectSource: datasource.Select,
+		newClient: func(creds ddinternal.Credentials, opts ddinternal.ClientOptions) (*datadog.APIClient, error) {
+			opts.Address = ts.URL
+			opts.AllowInsecure = true // httptest uses http:// (note B)
+			return ddinternal.NewClient(creds, opts)
+		},
+	}
+	m := metricWith(t, `{"metrics":{"query":"avg:cpu{*}"}}`)
+	m.SuccessCondition = "result >= 0.95"
+	out := g.Run(&v1alpha1.AnalysisRun{}, m)
+	require.Equal(t, v1alpha1.AnalysisPhaseSuccessful, out.Phase, out.Message)
 }

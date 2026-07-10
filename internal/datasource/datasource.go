@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -61,6 +62,17 @@ func (w TimeWindow) FromUnixMillis() int64  { return w.From.UnixMilli() }
 func (w TimeWindow) ToUnixMillis() int64    { return w.To.UnixMilli() }
 func (w TimeWindow) FromUnixSeconds() int64 { return w.From.Unix() }
 func (w TimeWindow) ToUnixSeconds() int64   { return w.To.Unix() }
+
+// sortedKeys returns the keys of a map[string]string in sorted order.
+// Used by metricsSource to build query lists in a deterministic order.
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
 
 // parseDuration extends time.ParseDuration with day support (e.g. "7d").
 func parseDuration(s string) (time.Duration, error) {
