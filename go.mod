@@ -3,15 +3,18 @@ module github.com/mubarak-j/rollouts-plugin-metric-datadog
 go 1.24.9
 
 require (
+	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
 	github.com/argoproj/argo-rollouts v1.9.0
 	github.com/hashicorp/go-plugin v1.6.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
+	k8s.io/apimachinery v0.34.1
+	k8s.io/client-go v0.34.1
 )
 
 require (
-	github.com/DataDog/datadog-api-client-go/v2 v2.62.0 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
+	github.com/antonmedv/expr v1.15.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fatih/color v1.16.0 // indirect
@@ -54,8 +57,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.34.1 // indirect
-	k8s.io/apimachinery v0.34.1 // indirect
-	k8s.io/client-go v0.34.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
