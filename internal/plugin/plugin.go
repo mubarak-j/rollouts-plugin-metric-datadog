@@ -87,10 +87,14 @@ func (g *RpcPlugin) Run(analysisRun *v1alpha1.AnalysisRun, metric v1alpha1.Metri
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
 
-	client, err := g.newClient(creds, ddinternal.ClientOptions{
+	clientOpts := ddinternal.ClientOptions{
 		Site: cfg.Site, Address: cfg.Address, Timeout: cfg.Timeout(),
 		Transport: g.transport(),
-	})
+	}
+	if cfg.Retry != nil {
+		clientOpts.MaxRetries = cfg.Retry.MaxRetries
+	}
+	client, err := g.newClient(creds, clientOpts)
 	if err != nil {
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
@@ -101,7 +105,7 @@ func (g *RpcPlugin) Run(analysisRun *v1alpha1.AnalysisRun, metric v1alpha1.Metri
 		return finish(metricutil.MarkMeasurementError(m, err))
 	}
 
-	key := ds.Key(cfg) + "|site=" + cfg.Site + "|win=" + windowBucket(cfg, time.Now())
+	key := ds.Key(cfg) + "|site=" + cfg.Site + "|addr=" + cfg.Address + "|cred=" + credKey(cfg, analysisRun.Namespace, g.controllerNamespace) + "|win=" + windowBucket(cfg, time.Now())
 	fresh := cfg.Cache != nil && cfg.Cache.Enabled != nil && !*cfg.Cache.Enabled
 
 	var value interface{}
@@ -219,6 +223,22 @@ func orDefault(s, def string) string {
 		return def
 	}
 	return s
+}
+
+// credKey returns a stable string identifying the Datadog credential identity
+// for use in the cache key. It encodes only the secret's namespace/name — never
+// any secret material. Two metrics sharing the same account (no secretRef, or
+// the same secretRef) produce the same output so that cross-rollout cache
+// coalescing is preserved. Isolation is by account/endpoint, not by rollout.
+func credKey(cfg *config.Config, runNamespace, controllerNamespace string) string {
+	if cfg.SecretRef != nil && cfg.SecretRef.Name != "" {
+		ns := controllerNamespace
+		if cfg.SecretRef.Namespaced {
+			ns = runNamespace
+		}
+		return "ref:" + ns + "/" + cfg.SecretRef.Name
+	}
+	return "default"
 }
 
 // stringify renders a resolved value for Measurement.Value (display only;

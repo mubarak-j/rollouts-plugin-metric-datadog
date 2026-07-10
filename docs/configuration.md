@@ -22,21 +22,29 @@ provider:
       tags: ["service:my-service", "env:production"]
 
       # --- Rate limiting (optional) ---
+      # NOTE: rateLimit.enabled, budgetFraction, maxConcurrent, and buckets are
+      # PHASE-1-RESERVED and not yet honored. The rate limiter runs with fixed
+      # built-in defaults (10 rps default bucket, 16 max concurrent). These
+      # fields are parsed and validated but have no runtime effect in Phase 1.
       rateLimit:
-        enabled: true                # Default: true
-        budgetFraction: 0.5          # Fraction of Datadog's reported limit to use. Default: 0.5
-        maxConcurrent: 16            # Max concurrent in-flight requests. Default: 16
-        buckets:                     # Per-bucket static RPS ceilings (keyed by X-RateLimit-Name)
+        enabled: true                # RESERVED (Phase 1) — not yet wired; limiter always runs at built-in defaults
+        budgetFraction: 0.5          # RESERVED (Phase 1) — parsed but ignored
+        maxConcurrent: 16            # RESERVED (Phase 1) — parsed but ignored; built-in default is 16
+        buckets:                     # RESERVED (Phase 1) — parsed but ignored
           metrics: {rps: 5.0}
 
       # --- Caching (optional) ---
+      # NOTE: cache.ttl is PHASE-1-RESERVED. The shared cache always uses a
+      # fixed 30s TTL. Setting cache.enabled: false skips reading a fresh value
+      # from the TTL window, but the shared cache still coalesces concurrent
+      # identical queries — it does not fully disable caching.
       cache:
-        enabled: true                # Default: true
-        ttl: "30s"                   # How long to serve a cached result. Default: 30s
+        enabled: true                # Live: false skips fresh-value TTL read; cache still coalesces concurrent queries
+        ttl: "30s"                   # RESERVED (Phase 1) — parsed but ignored; cache always uses 30s TTL
 
       # --- SDK retry (optional) ---
       retry:
-        maxRetries: 3                # SDK-level retries on 429/5xx. Default: 3
+        maxRetries: 3                # Live: SDK-level retries on 429/5xx. Default: 3
 
       # --- Source block (exactly one required) ---
       metrics: ...                   # See Metrics Source below
@@ -186,17 +194,20 @@ The plugin emits a log warning (surfaced by `Config.Warnings()`) when a monitor 
 
 ## Rate Limit and Cache Defaults
 
-| Field | Default |
-|---|---|
-| `rateLimit.enabled` | `true` |
-| `rateLimit.budgetFraction` | `0.5` (50% of reported Datadog limit) (applied by the limiter layer at runtime, not by config defaulting — holds even when omitted or zero) |
-| `rateLimit.maxConcurrent` | `16` (applied by the limiter layer at runtime, not by config defaulting — holds even when omitted or zero) |
-| `cache.enabled` | `true` |
-| `cache.ttl` | `30s` |
-| `retry.maxRetries` | `3` |
-| `timeoutSeconds` | `30` |
-| `metrics.apiVersion` | `v2` |
-| `metrics.interval` | `5m` |
-| `slo.interval` (by-id) | `7d` |
+| Field | Default | Phase 1 status |
+|---|---|---|
+| `rateLimit.enabled` | `true` | **RESERVED** — not yet wired |
+| `rateLimit.budgetFraction` | `0.5` (applied by limiter at runtime, not by config defaulting) | **RESERVED** — parsed but ignored |
+| `rateLimit.maxConcurrent` | `16` (applied by limiter at runtime, not by config defaulting) | **RESERVED** — parsed but ignored |
+| `rateLimit.buckets` | — | **RESERVED** — parsed but ignored |
+| `cache.enabled` | `true` | **Live** — `false` skips fresh-value TTL read; concurrent identical queries are still coalesced |
+| `cache.ttl` | `30s` | **RESERVED** — parsed but ignored; cache always uses 30s TTL |
+| `retry.maxRetries` | `3` | **Live** — wired to SDK retry count |
+| `timeoutSeconds` | `30` | **Live** |
+| `metrics.apiVersion` | `v2` | **Live** |
+| `metrics.interval` | `5m` | **Live** |
+| `slo.interval` (by-id) | `7d` | **Live** |
+
+**Phase 1 reserved knobs:** In Phase 1, `rateLimit.*` (enabled/budgetFraction/maxConcurrent/buckets) and `cache.ttl` are parsed and stored but have no runtime effect. The rate limiter runs with fixed built-in defaults: 10 rps default bucket, 16 max concurrent. The cache TTL is fixed at 30s. These fields are present in the schema so operator configs written today will be forward-compatible when Phase 2 wires them.
 
 The rate limiter is shared across all concurrent measurements in the same plugin process. It learns per-endpoint Datadog bucket names from `X-RateLimit-Name` response headers and adapts its token-bucket ceiling accordingly (layer 2 adaptation). The concurrency semaphore (layer 4) prevents thundering-herd bursts during large canary waves.
