@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -72,6 +73,21 @@ func sortedKeys(m map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// structToMap marshals a typed SDK response to JSON then re-unmarshals into a
+// generic map, so expr conditions traverse the same field names as the raw
+// Datadog API JSON (the web-provider compatibility contract, §6).
+func structToMap(v interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // parseDuration extends time.ParseDuration with day support (e.g. "7d").
