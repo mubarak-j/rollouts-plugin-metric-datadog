@@ -13,6 +13,8 @@ require (
 )
 
 require (
+	// Intentional pin: go mod tidy strips this cgo-only dep (used by the Datadog
+	// SDK's zstd compression path) and breaks the -race build. Do not remove.
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/antonmedv/expr v1.15.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
