@@ -1,0 +1,119 @@
+# Installing the Datadog Metric Plugin
+
+The plugin binary must be present on every node where the `argo-rollouts` controller pod runs. Two methods are supported: initContainer copy (recommended for self-hosted clusters) and direct URL download.
+
+---
+
+## Method 1: initContainer copy
+
+This method uses an initContainer to copy the binary from the plugin image into a shared `emptyDir` volume before the controller starts. It requires no internet access at controller startup.
+
+### 1. Patch the controller Deployment
+
+Add an initContainer and a shared volume to the `argo-rollouts` Deployment:
+
+```yaml
+spec:
+  template:
+    spec:
+      volumes:
+        - name: plugin-bin
+          emptyDir: {}
+      initContainers:
+        - name: copy-datadog-plugin
+          image: ghcr.io/mubarak-j/rollouts-plugin-metric-datadog:latest
+          command:
+            - cp
+            - /plugin/rollouts-plugin-metric-datadog
+            - /plugin-bin/mubarak-j/rollouts-plugin-metric-datadog
+          volumeMounts:
+            - name: plugin-bin
+              mountPath: /plugin-bin
+      containers:
+        - name: argo-rollouts
+          # ... existing container spec ...
+          volumeMounts:
+            - name: plugin-bin
+              mountPath: /plugin-bin
+```
+
+The binary lands at `/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog` inside the controller container.
+
+### 2. Configure the plugin in the ConfigMap
+
+Update (or create) the `argo-rollouts-config` ConfigMap in the same namespace as the controller:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argo-rollouts-config
+data:
+  metricProviderPlugins: |-
+    - name: "mubarak-j/rollouts-plugin-metric-datadog"
+      location: "file://./plugin-bin/mubarak-j/rollouts-plugin-metric-datadog"
+```
+
+Restart the controller after applying the ConfigMap.
+
+---
+
+## Method 2: URL download
+
+Argo Rollouts can download the plugin binary directly from a GitHub release at controller startup. Add the `sha256` checksum so the controller verifies the binary before running it.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argo-rollouts-config
+data:
+  metricProviderPlugins: |-
+    - name: "mubarak-j/rollouts-plugin-metric-datadog"
+      location: "https://github.com/mubarak-j/rollouts-plugin-metric-datadog/releases/download/v0.1.0/rollouts-plugin-metric-datadog-linux-amd64"
+      sha256: "<sha256-of-the-release-binary>"
+```
+
+Replace the version tag and `sha256` with the values from the release page.
+
+---
+
+## RBAC
+
+### Default install (controller-namespace secret)
+
+The default credential resolution (step 3 in [configuration.md](configuration.md#credential-resolution-order)) reads a Secret named `datadog` from the controller's own namespace. The standard `argo-rollouts` ClusterRole already grants `secrets/get` within its namespace, so **no additional RBAC is required** for the default install.
+
+### Cross-namespace secretRef (`namespaced: true`)
+
+When a metric uses `secretRef.namespaced: true`, the plugin reads the named Secret from the AnalysisRun's namespace via the controller ServiceAccount. The controller must be granted `get` on Secrets in those namespaces.
+
+**Security note (Fix #3 — secretRef escalation):** Because `secretRef.name` is unrestricted and `namespaced: true` causes the plugin to read the named Secret from the AnalysisRun's namespace via the controller ServiceAccount, **anyone who can author AnalysisTemplates or AnalysisRuns in a namespace can instruct the controller to read any Secret in that namespace and forward its `api-key`/`app-key` to Datadog.** Operators must treat "can author AnalysisTemplates in namespace N" as equivalent to "can read all Secrets in N". To restrict this, enforce eligible Secret names by naming convention, label selector, or an admission policy (e.g. OPA/Kyverno) that rejects unknown `secretRef.name` values.
+
+Example RBAC for cross-namespace reads:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-rollouts-secret-reader
+  namespace: my-app-namespace
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-rollouts-secret-reader
+  namespace: my-app-namespace
+subjects:
+  - kind: ServiceAccount
+    name: argo-rollouts
+    namespace: argo-rollouts
+roleRef:
+  kind: Role
+  apiRef: rbac.authorization.k8s.io
+  name: argo-rollouts-secret-reader
+```
