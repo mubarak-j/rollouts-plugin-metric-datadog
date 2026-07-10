@@ -13,8 +13,8 @@ import (
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/argo-rollouts/utils/evaluate"
 	metricutil "github.com/argoproj/argo-rollouts/utils/metric"
-	timeutil "github.com/argoproj/argo-rollouts/utils/time"
 	"github.com/argoproj/argo-rollouts/utils/plugin/types"
+	timeutil "github.com/argoproj/argo-rollouts/utils/time"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mubarak-j/rollouts-plugin-metric-datadog/internal/config"

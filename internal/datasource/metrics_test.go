@@ -48,9 +48,9 @@ func TestMetrics_V2Formula(t *testing.T) {
 	res, err := runSource(t, ts, metricsSource{}, cfg)
 	require.NoError(t, err)
 	assert.InDelta(t, 0.5, res.Value.(float64), 1e-9)
-	assert.Contains(t, gotBody, `(a-b)/a`)     // formula is sent
-	assert.Contains(t, gotBody, `"name":"a"`)  // query a included
-	assert.Contains(t, gotBody, `"name":"b"`)  // query b included
+	assert.Contains(t, gotBody, `(a-b)/a`)    // formula is sent
+	assert.Contains(t, gotBody, `"name":"a"`) // query a included
+	assert.Contains(t, gotBody, `"name":"b"`) // query b included
 }
 
 func TestMetrics_V1(t *testing.T) {
