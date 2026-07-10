@@ -99,9 +99,10 @@ func (l *Limiter) bucketFor(name string) *rate.Limiter {
 	if v, ok := l.opts.StaticBuckets[name]; ok && v > 0 {
 		rps = v
 	}
-	// Burst = 1 keeps the ceiling tight; the "small burst" keeps rate-test
-	// assertions accurate and avoids double-burst when bucket names switch.
-	lim := rate.NewLimiter(rate.Limit(rps), 1)
+	// Burst = max(1, rps) allows a short initial burst equal to one second's
+	// worth of tokens, which avoids strictly serialising concurrent canary-wave
+	// traffic while still respecting the per-second ceiling.
+	lim := rate.NewLimiter(rate.Limit(rps), max(1, int(rps)))
 	l.buckets[name] = lim
 	return lim
 }
@@ -135,8 +136,9 @@ func (l *Limiter) observe(resp *http.Response) {
 		}
 		if lim, ok := l.buckets[name]; ok {
 			lim.SetLimit(rate.Limit(rps))
+			lim.SetBurst(max(1, int(rps)))
 		} else {
-			l.buckets[name] = rate.NewLimiter(rate.Limit(rps), 1)
+			l.buckets[name] = rate.NewLimiter(rate.Limit(rps), max(1, int(rps)))
 		}
 	}
 }

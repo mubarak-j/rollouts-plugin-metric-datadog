@@ -16,7 +16,10 @@ func TestLimiter_CapsQPS(t *testing.T) {
 	var count int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt64(&count, 1)
-		w.Header().Set("X-RateLimit-Name", "test")
+		// No X-RateLimit-Name header: observe() returns early, so all 30
+		// requests gate on the single "_default" bucket. This avoids the
+		// two-bucket split (first N on _default, rest on learned bucket)
+		// that would defeat the timing assertion below.
 		w.WriteHeader(200)
 	}))
 	defer ts.Close()
@@ -37,7 +40,9 @@ func TestLimiter_CapsQPS(t *testing.T) {
 	}
 	wg.Wait()
 	elapsed := time.Since(start)
-	// 30 requests at 10 rps with a small burst should take well over ~2s.
+	// Timing: burst=max(1,10)=10 tokens at t=0, then 1 token/100ms.
+	// 30 requests = 10 burst + 20 metered → metered tokens span 20×100ms = 2s.
+	// So elapsed ≥ 2s deterministically (single _default bucket, no split).
 	assert.GreaterOrEqual(t, elapsed, 2*time.Second)
 	assert.Equal(t, int64(30), atomic.LoadInt64(&count))
 }
