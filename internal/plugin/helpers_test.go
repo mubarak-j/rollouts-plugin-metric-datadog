@@ -29,6 +29,11 @@ func (stubSecrets) GetSecret(_ context.Context, _, _ string) (map[string][]byte,
 // newTestPlugin builds an RpcPlugin whose source selection is overridden to a fake.
 func newTestPlugin(t *testing.T, ds datasource.DataSource) *RpcPlugin {
 	t.Helper()
+	// Clear any ambient DD_* env vars so credential resolution always falls
+	// through to stubSecrets (step 3) rather than stopping at env-var lookup
+	// (step 2). t.Setenv auto-restores the original value after the test.
+	t.Setenv("DD_API_KEY", "")
+	t.Setenv("DD_APP_KEY", "")
 	return &RpcPlugin{
 		LogCtx:              *log.WithField("test", t.Name()),
 		resolver:            &ddinternal.Resolver{Secrets: stubSecrets{}, ControllerNamespace: "argo-rollouts"},
