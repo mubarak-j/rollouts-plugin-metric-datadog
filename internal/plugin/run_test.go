@@ -81,8 +81,8 @@ func TestRun_MetricsConditionAgainstRealServer(t *testing.T) {
 	defer ts.Close()
 
 	g := &RpcPlugin{
-		LogCtx:   *log.WithField("test", t.Name()),
-		resolver: &ddinternal.Resolver{Secrets: stubSecrets{}, ControllerNamespace: "argo-rollouts"},
+		LogCtx:       *log.WithField("test", t.Name()),
+		resolver:     &ddinternal.Resolver{Secrets: stubSecrets{}, ControllerNamespace: "argo-rollouts"},
 		selectSource: datasource.Select,
 		newClient: func(creds ddinternal.Credentials, opts ddinternal.ClientOptions) (*datadog.APIClient, error) {
 			opts.Address = ts.URL
