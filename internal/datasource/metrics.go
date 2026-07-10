@@ -15,7 +15,14 @@ type metricsSource struct{}
 
 func (metricsSource) Key(cfg *config.Config) string {
 	m := cfg.Metrics
-	return fmt.Sprintf("metrics|%s|%s|%v|%s|%v|%s", m.APIVersion, m.Query, m.Queries, m.Formula, cfg.Tags, m.Interval)
+	var queriesPart string
+	for _, name := range sortedKeys(m.Queries) {
+		if queriesPart != "" {
+			queriesPart += ","
+		}
+		queriesPart += name + "=" + m.Queries[name]
+	}
+	return fmt.Sprintf("metrics|%s|%s|%s|%s|%v|%s", m.APIVersion, m.Query, queriesPart, m.Formula, cfg.Tags, m.Interval)
 }
 
 func (metricsSource) Query(ctx context.Context, client *datadog.APIClient, cfg *config.Config) (Result, error) {
@@ -45,6 +52,9 @@ func queryV2(ctx context.Context, client *datadog.APIClient, cfg *config.Config,
 	} else {
 		// stable name order for determinism
 		names := sortedKeys(m.Queries)
+		if len(names) == 0 {
+			return Result{}, fmt.Errorf("metrics v2: no queries specified")
+		}
 		for _, name := range names {
 			q := MergeScopeTags(m.Queries[name], cfg.Tags)
 			resolved[name] = q
