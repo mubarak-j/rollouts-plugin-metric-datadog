@@ -8,15 +8,8 @@ import (
 	"github.com/mubarak-j/rollouts-plugin-metric-datadog/internal/config"
 )
 
-// metricsSource, monitorSource, and sloSource are temporary stubs.
-// Tasks 7–9 replace each stub with a real implementation.
-
-type metricsSource struct{}
-
-func (metricsSource) Query(_ context.Context, _ *datadog.APIClient, _ *config.Config) (Result, error) {
-	return Result{}, fmt.Errorf("metrics source not implemented")
-}
-func (metricsSource) Key(_ *config.Config) string { return "metrics" }
+// monitorSource and sloSource are temporary stubs.
+// Tasks 8–9 replace each stub with a real implementation.
 
 type monitorSource struct{}
 
