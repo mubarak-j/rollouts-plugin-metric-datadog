@@ -13,6 +13,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// countingSource is a DataSource that records how many times Query is called.
+type countingSource struct {
+	value interface{}
+	calls int
+}
+
+func (c *countingSource) Query(_ context.Context, _ *datadog.APIClient, _ *config.Config) (datasource.Result, error) {
+	c.calls++
+	return datasource.Result{Value: c.value}, nil
+}
+func (c *countingSource) Key(_ *config.Config) string { return "counting" }
+
 func metricWith(t *testing.T, raw string) v1alpha1.Metric {
 	t.Helper()
 	return v1alpha1.Metric{Provider: v1alpha1.MetricProvider{
@@ -38,6 +50,7 @@ func newTestPlugin(t *testing.T, ds datasource.DataSource) *RpcPlugin {
 		LogCtx:              *log.WithField("test", t.Name()),
 		resolver:            &ddinternal.Resolver{Secrets: stubSecrets{}, ControllerNamespace: "argo-rollouts"},
 		controllerNamespace: "argo-rollouts",
+		cache:               ddinternal.NewCache(ddinternal.CacheOptions{Enabled: false}),
 		selectSource:        func(_ *config.Config) (datasource.DataSource, error) { return ds, nil },
 		newClient: func(creds ddinternal.Credentials, opts ddinternal.ClientOptions) (*datadog.APIClient, error) {
 			return ddinternal.NewClient(creds, opts)
