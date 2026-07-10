@@ -33,7 +33,10 @@ func TestMetrics_V2Scalar(t *testing.T) {
 }
 
 func TestMetrics_V2Formula(t *testing.T) {
+	var gotBody string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
 		_, _ = w.Write([]byte(`{"data":{"attributes":{"columns":[{"type":"number","values":[0.5]}]}}}`))
 	}))
 	defer ts.Close()
@@ -45,6 +48,9 @@ func TestMetrics_V2Formula(t *testing.T) {
 	res, err := runSource(t, ts, metricsSource{}, cfg)
 	require.NoError(t, err)
 	assert.InDelta(t, 0.5, res.Value.(float64), 1e-9)
+	assert.Contains(t, gotBody, `(a-b)/a`)     // formula is sent
+	assert.Contains(t, gotBody, `"name":"a"`)  // query a included
+	assert.Contains(t, gotBody, `"name":"b"`)  // query b included
 }
 
 func TestMetrics_V1(t *testing.T) {
@@ -89,4 +95,31 @@ func TestMetrics_V2SingleNamedQueryNoFormula(t *testing.T) {
 	require.NoError(t, err)
 	assert.InDelta(t, 0.42, res.Value.(float64), 1e-9)
 	assert.Contains(t, gotBody, `"formula":"a"`) // synthesized from the query name, not empty
+}
+
+func TestMetrics_V2EmptyQueriesReturnsError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("server should not be called for empty queries")
+	}))
+	defer ts.Close()
+	cfg := &config.Config{Metrics: &config.MetricsConfig{APIVersion: "v2", Queries: nil}}
+	_, err := runSource(t, ts, metricsSource{}, cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no queries")
+}
+
+func TestMetrics_KeyIsDeterministic(t *testing.T) {
+	cfg := &config.Config{
+		Metrics: &config.MetricsConfig{
+			APIVersion: "v2",
+			Queries:    map[string]string{"a": "sum:hits{*}.as_count()", "b": "sum:errs{*}.as_count()"},
+			Formula:    "(a-b)/a",
+		},
+	}
+	src := metricsSource{}
+	k1 := src.Key(cfg)
+	k2 := src.Key(cfg)
+	k3 := src.Key(cfg)
+	assert.Equal(t, k1, k2)
+	assert.Equal(t, k2, k3)
 }
