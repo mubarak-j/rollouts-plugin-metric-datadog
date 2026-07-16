@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: datadog-monitors-and-slos
+spec:
+  metrics:
+    - name: monitors
+      interval: 1m
+      failureLimit: 2
+      provider:
+        plugin:
+          mubarak-j/rollouts-plugin-metric-datadog:
+            tags: ["service:my-cool-service", "env:production"]
+            monitor: {}
+      failureCondition: "any(result.counts.status, {.name == 'Alert' && .count > 0})"
+    - name: slos
+      interval: 1m
+      failureLimit: 2
+      provider:
+        plugin:
+          mubarak-j/rollouts-plugin-metric-datadog:
+            tags: ["service:my-cool-service", "env:production"]
+            slo: {}
+      failureCondition: "any(result.slos, {any(.overall_status, {.state == 'breached'})})"

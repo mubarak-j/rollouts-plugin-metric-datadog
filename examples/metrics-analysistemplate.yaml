@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: datadog-error-rate
+spec:
+  metrics:
+    - name: error-rate
+      interval: 1m
+      provider:
+        plugin:
+          mubarak-j/rollouts-plugin-metric-datadog:
+            tags: ["service:my-cool-service", "env:production"]
+            metrics:
+              apiVersion: v2
+              queries:
+                a: "sum:trace.http.request.hits{*}.as_count()"
+                b: "sum:trace.http.request.errors{*}.as_count()"
+              formula: "(a - b) / a"
+      successCondition: "result >= 0.95"
