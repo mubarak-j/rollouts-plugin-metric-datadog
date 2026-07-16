@@ -6,6 +6,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    ignore:
+      # cgo-only dep that `go mod tidy` strips and that breaks the -race build;
+      # kept pinned manually (see Makefile), so Dependabot must not touch it.
+      - dependency-name: "github.com/DataDog/zstd"
 
   # GitHub Actions used in .github/workflows
   - package-ecosystem: "github-actions"
