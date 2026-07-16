@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: datadog-monitors
+spec:
+  metrics:
+    - name: monitors
+      interval: 1m
+      failureLimit: 2
+      provider:
+        plugin:
+          mubarak-j/rollouts-plugin-metric-datadog:
+            tags: ["service:my-cool-service", "env:production"]
+            monitor:
+              query: "muted:false"
+      failureCondition: "any(result.counts.status, {.name == 'Alert' && .count > 0})"
+      successCondition: "result.counts.status == nil || any(result.counts.status, {.name != 'Alert'})"
