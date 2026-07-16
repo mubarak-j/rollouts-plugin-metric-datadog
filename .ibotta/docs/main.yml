@@ -1,0 +1,20 @@
+# --------------------------------------
+# Ibotta Repository Main Metadata File
+# --------------------------------------
+name: rollouts-plugin-metric-datadog
+description: rollouts-plugin-metric-datadog
+tier: 3
+data_classification: 2
+
+#dashboards:
+#  - title: Datadog
+#    url: https://app.datadoghq.com/dashboard/YOUR-DASH-ID
+
+nav:
+  - title: Documentation
+    type: nav
+    children:
+      - title: Overview
+        file: README.md
+
+type: service
