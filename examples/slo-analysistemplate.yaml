@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: datadog-slos
+spec:
+  metrics:
+    - name: slos
+      interval: 1m
+      failureLimit: 2
+      provider:
+        plugin:
+          mubarak-j/rollouts-plugin-metric-datadog:
+            tags: ["service:my-cool-service", "env:production"]
+            slo: {}
+      failureCondition: "any(result.slos, {any(.overall_status, {.state == 'breached'})})"
+      successCondition: "all(result.slos, {all(.overall_status, {.state != 'breached'})})"
