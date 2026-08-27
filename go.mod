@@ -3,7 +3,7 @@ module github.com/mubarak-j/rollouts-plugin-metric-datadog
 go 1.26.0
 
 require (
-	github.com/DataDog/datadog-api-client-go/v2 v2.62.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.64.0
 	github.com/argoproj/argo-rollouts v1.9.1
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/sirupsen/logrus v1.9.4
