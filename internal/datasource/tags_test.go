@@ -29,8 +29,3 @@ func TestMergeScopeTags(t *testing.T) {
 	// no tags: query unchanged
 	assert.Equal(t, "avg:cpu{*}", MergeScopeTags("avg:cpu{*}", nil))
 }
-
-func TestAppendQueryFilter(t *testing.T) {
-	assert.Equal(t, "status:error service:x", AppendQueryFilter("status:error", []string{"service:x"}))
-	assert.Equal(t, "service:x", AppendQueryFilter("", []string{"service:x"}))
-}

@@ -19,7 +19,6 @@ type Config struct {
 	SecretRef      *SecretRef       `json:"secretRef,omitempty"`
 	TimeoutSeconds int              `json:"timeoutSeconds,omitempty"`
 	Tags           []string         `json:"tags,omitempty"`
-	RateLimit      *RateLimitConfig `json:"rateLimit,omitempty"`
 	Cache          *CacheConfig     `json:"cache,omitempty"`
 	Retry          *RetryConfig     `json:"retry,omitempty"`
 
@@ -43,33 +42,18 @@ type MetricsConfig struct {
 }
 
 type MonitorConfig struct {
-	Mode  string `json:"mode,omitempty"` // search (default) | (id set => by-id)
 	Query string `json:"query,omitempty"`
 	ID    *int64 `json:"id,omitempty"`
 }
 
 type SLOConfig struct {
-	Mode     string  `json:"mode,omitempty"` // search (default) | (id set => by-id)
 	Query    string  `json:"query,omitempty"`
 	ID       *string `json:"id,omitempty"`
 	Interval string  `json:"interval,omitempty"` // by-id history window, default 7d
 }
 
-type RateLimitConfig struct {
-	Enabled        *bool                    `json:"enabled,omitempty"` // default true
-	BudgetFraction float64                  `json:"budgetFraction,omitempty"`
-	Buckets        map[string]BucketCeiling `json:"buckets,omitempty"`
-	MaxConcurrent  int                      `json:"maxConcurrent,omitempty"`
-}
-
-type BucketCeiling struct {
-	RPS float64 `json:"rps,omitempty"`
-}
-
 type CacheConfig struct {
-	Enabled      *bool  `json:"enabled,omitempty"` // default true
-	TTL          string `json:"ttl,omitempty"`
-	MaxStaleness string `json:"maxStaleness,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"` // default true
 }
 
 type RetryConfig struct {

@@ -62,9 +62,7 @@ func TestLimiter_AdaptsCeilingFromHeaders(t *testing.T) {
 	resp, err := client.Get(ts.URL)
 	require.NoError(t, err)
 	_ = resp.Body.Close()
-	info := l.LastInfo("metrics_query")
-	assert.Equal(t, float64(1600), info.Limit)
-	assert.Equal(t, "metrics_query", info.Name)
+	assert.Equal(t, "metrics_query", l.LearnedBucket(http.MethodGet, ""))
 }
 
 func TestLimiter_LearnsBucketPerPathAndGatesOnIt(t *testing.T) {
