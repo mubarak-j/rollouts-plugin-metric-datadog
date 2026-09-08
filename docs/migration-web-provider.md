@@ -69,7 +69,7 @@ spec:
 ```
 
 What changed:
-- **No credential args.** The plugin reads credentials from the `datadog` Secret in the controller namespace automatically (resolution step 3). The existing Ibotta `datadog` Secret (`api-key` / `app-key` keys) drops in unchanged — no new Secret, no new `args`.
+- **No credential args.** The plugin reads credentials from the `datadog` Secret in the controller namespace automatically (resolution step 3). The existing `datadog` Secret (`api-key` / `app-key` keys) drops in unchanged — no new Secret, no new `args`.
 - **Structured tags.** `tags` is a YAML list; the plugin merges them into the query's `{...}` scope brace. No URI encoding.
 - **Time window computed in-process.** The plugin computes `[now-5m, now]` automatically from `metrics.interval` (default 5m). No template arithmetic.
 - **Rate limiting and caching** are on by default across all concurrent measurements.
@@ -112,7 +112,7 @@ Note: the plugin returns the full `SearchMonitorGroupsResponse` as `result`, so 
 
 ## Credential reuse
 
-The plugin's resolution step 3 reads a Secret literally named `datadog` from the controller namespace, expecting `api-key` and `app-key` keys. This matches the Ibotta-standard Datadog Secret that the `web` provider previously referenced via `secretKeyRef`. No Secret changes are needed; remove the `args` block from the AnalysisTemplate and let the plugin resolve credentials automatically.
+The plugin's resolution step 3 reads a Secret literally named `datadog` from the controller namespace, expecting `api-key` and `app-key` keys. This matches the standard Datadog Secret that the `web` provider previously referenced via `secretKeyRef`. No Secret changes are needed; remove the `args` block from the AnalysisTemplate and let the plugin resolve credentials automatically.
 
 If your cluster uses a different Secret name, set `secretRef.name` explicitly:
 

@@ -31,7 +31,7 @@ Argo Rollouts ships a built-in Datadog **metric** provider
 and evaluates it against `successCondition`/`failureCondition`. It has no concept
 of monitors, SLOs, APM spans, or logs.
 
-### 2.2 The current Ibotta workaround
+### 2.2 The current workaround
 Monitor checks today are done with Argo's generic **`web`** provider against the
 Monitor Group Search API, e.g.:
 
@@ -377,7 +377,7 @@ within a single object is out of scope; use search mode for tag filtering.
 2. Environment variables: `DD_API_KEY`, `DD_APP_KEY`, `DD_ADDRESS`.
 3. A secret literally named `datadog` in the controller namespace.
 
-Secret keys: `api-key`, `app-key`, optional `address`. (The existing Ibotta
+Secret keys: `api-key`, `app-key`, optional `address`. (An existing
 `datadog` secret with `api-key`/`app-key` drops straight into step 3.) Region is
 otherwise selected by the top-level `site` config field (§5.1, §8.3); the built-in
 provider has no `DD_SITE` env var and no `site` secret key.
@@ -512,7 +512,7 @@ Code reuse: import argo-rollouts as a Go module dependency (`v1alpha1` types,
   target), `slo` (tag search + by-id).
 - Rate-limit & scale core (§15): shared limiter, header-adaptive control,
   coalescing + short-TTL cache, header-aware SDK retry, last-known-good degradation.
-- Docs + examples including the Ibotta `web`-provider → plugin migration.
+- Docs + examples including the `web`-provider → plugin migration.
 
 **Phase 2** — the aggregation sources:
 - `apm` (`AggregateSpans`) and `logs` (`AggregateLogs`) as two new `DataSource`
@@ -529,7 +529,7 @@ Code reuse: import argo-rollouts as a Go module dependency (`v1alpha1` types,
   (`file://`) method when the cluster has no outbound internet access or already
   manages binaries via image workflows; use **`https://`** for simple clusters with
   internet egress where image management is a burden.
-- Migration doc: the Ibotta `cluster-datadog-monitor.yaml` (`web` provider, manual
+- Migration doc: the `cluster-datadog-monitor.yaml` (`web` provider, manual
   tag encoding, keys-in-args) → the plugin form (structured `tags`, in-process
   credential resolution, same conditions).
 
@@ -650,7 +650,7 @@ Verified during design (2026-06-18):
   `OverallStatus []SLOOverallStatuses` with `state` (breached/warning/ok/no_data),
   `status` (SLI), `target`, `errorBudgetRemaining`, plus `all_tags`/`service_tags`/
   `env_tags`/`team_tags`, `name`, `groups`, `thresholds`.
-- Ibotta current approach: `kubernetes-deployments`
+- Prior approach: `kubernetes-deployments`
   `.../argo-rollouts/analysisTemplate/cluster-datadog-monitor.yaml` (Monitor Group
   Search via the `web` provider).
 
