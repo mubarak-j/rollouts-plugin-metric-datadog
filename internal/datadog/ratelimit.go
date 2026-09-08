@@ -14,16 +14,6 @@ type LimiterOptions struct {
 	DefaultRPS     float64
 	MaxConcurrent  int
 	BudgetFraction float64
-	StaticBuckets  map[string]float64 // bucket name -> rps ceiling
-}
-
-// RateInfo holds the last-seen X-RateLimit-* header values for a named bucket.
-// Exposed for observability (Task 11 surfaces it).
-type RateInfo struct {
-	Name         string
-	Limit        float64
-	Remaining    float64
-	ResetSeconds float64
 }
 
 // Limiter is a shared http.RoundTripper decorator that enforces:
@@ -39,7 +29,6 @@ type Limiter struct {
 
 	mu         sync.Mutex
 	buckets    map[string]*rate.Limiter
-	lastInfo   map[string]RateInfo
 	pathBucket map[string]string // "METHOD path" -> X-RateLimit-Name learned from responses
 }
 
@@ -59,7 +48,6 @@ func NewLimiter(opts LimiterOptions) *Limiter {
 		opts:       opts,
 		sem:        sem,
 		buckets:    map[string]*rate.Limiter{},
-		lastInfo:   map[string]RateInfo{},
 		pathBucket: map[string]string{},
 	}
 }
@@ -67,13 +55,6 @@ func NewLimiter(opts LimiterOptions) *Limiter {
 // Transport returns an http.RoundTripper that applies rate limiting.
 func (l *Limiter) Transport() http.RoundTripper {
 	return &limitRT{l: l, next: http.DefaultTransport}
-}
-
-// LastInfo returns the last-seen RateLimit headers for a named bucket.
-func (l *Limiter) LastInfo(bucket string) RateInfo {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return l.lastInfo[bucket]
 }
 
 // LearnedBucket reports the X-RateLimit-Name observed for a method+path, or ""
@@ -96,9 +77,6 @@ func (l *Limiter) bucketFor(name string) *rate.Limiter {
 		return lim
 	}
 	rps := l.opts.DefaultRPS
-	if v, ok := l.opts.StaticBuckets[name]; ok && v > 0 {
-		rps = v
-	}
 	// Burst = max(1, rps) allows a short initial burst equal to one second's
 	// worth of tokens, which avoids strictly serialising concurrent canary-wave
 	// traffic while still respecting the per-second ceiling.
@@ -107,30 +85,24 @@ func (l *Limiter) bucketFor(name string) *rate.Limiter {
 	return lim
 }
 
-// observe reads X-RateLimit-* headers from resp, records RateInfo, learns the
-// path→bucket mapping, and adapts the token-bucket ceiling.
+// observe reads X-RateLimit-* headers from resp, learns the path→bucket
+// mapping, and adapts the token-bucket ceiling.
 func (l *Limiter) observe(resp *http.Response) {
 	name := resp.Header.Get("X-RateLimit-Name")
 	if name == "" {
 		return
 	}
-	info := RateInfo{
-		Name:         name,
-		Limit:        parseFloat(resp.Header.Get("X-RateLimit-Limit")),
-		Remaining:    parseFloat(resp.Header.Get("X-RateLimit-Remaining")),
-		ResetSeconds: parseFloat(resp.Header.Get("X-RateLimit-Reset")),
-	}
+	limit := parseFloat(resp.Header.Get("X-RateLimit-Limit"))
 	period := parseFloat(resp.Header.Get("X-RateLimit-Period"))
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.lastInfo[name] = info
 	if resp.Request != nil {
 		l.pathBucket[pathKey(resp.Request)] = name // learn which bucket gates this endpoint
 	}
 	// Adapt the ceiling: limit/period * budgetFraction.
-	if info.Limit > 0 && period > 0 {
-		rps := (info.Limit / period) * l.opts.BudgetFraction
+	if limit > 0 && period > 0 {
+		rps := (limit / period) * l.opts.BudgetFraction
 		if rps <= 0 {
 			rps = l.opts.DefaultRPS
 		}

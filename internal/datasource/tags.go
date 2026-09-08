@@ -12,16 +12,6 @@ func JoinSearchQuery(tags []string, extra string) string {
 	return strings.Join(parts, " ")
 }
 
-// AppendQueryFilter ANDs tags onto a query string (apm/logs).
-func AppendQueryFilter(query string, tags []string) string {
-	parts := make([]string, 0, len(tags)+1)
-	if strings.TrimSpace(query) != "" {
-		parts = append(parts, strings.TrimSpace(query))
-	}
-	parts = append(parts, tags...)
-	return strings.Join(parts, " ")
-}
-
 // MergeScopeTags merges tags into the first {…} scope brace of a metric query,
 // preserving any trailing `by {…}` grouping and function suffix. A query with no
 // scope brace gets one appended after the metric name.
