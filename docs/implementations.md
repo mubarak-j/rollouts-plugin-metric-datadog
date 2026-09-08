@@ -3184,7 +3184,7 @@ Document the full config schema from §5 (shared connection fields, `tags`, the 
 
 - [ ] **Step 8: Write `docs/migration-web-provider.md`**
 
-Show the before (`web` provider with manual URI-encoded tags and `api-key`/`app-key` in `args`/headers) → after (this plugin with structured `tags` and in-process credential resolution), reusing the same `failureCondition`/`successCondition`. Point at the `datadog` secret reuse (§8.1 step 3) so an existing `datadog` secret drops in unchanged.
+Show the before (`web` provider with manual URI-encoded tags and `api-key`/`app-key` in `args`/headers) → after (this plugin with structured `tags` and in-process credential resolution), reusing the same `failureCondition`/`successCondition`. Point at the `datadog` secret reuse (§8.1 step 3) so the existing secret drops in unchanged.
 
 - [ ] **Step 9: Update `README.md`** with a one-paragraph overview, the supported sources (Phase 1: metrics/monitor/slo), the supported argo-rollouts version range (built against v1.9.0, §4.4), and links to the docs/ pages.
 

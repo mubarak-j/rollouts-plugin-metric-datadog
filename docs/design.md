@@ -529,7 +529,7 @@ Code reuse: import argo-rollouts as a Go module dependency (`v1alpha1` types,
   (`file://`) method when the cluster has no outbound internet access or already
   manages binaries via image workflows; use **`https://`** for simple clusters with
   internet egress where image management is a burden.
-- Migration doc: the legacy `cluster-datadog-monitor.yaml` (`web` provider, manual
+- Migration doc: the `cluster-datadog-monitor.yaml` (`web` provider, manual
   tag encoding, keys-in-args) → the plugin form (structured `tags`, in-process
   credential resolution, same conditions).
 
@@ -650,7 +650,7 @@ Verified during design (2026-06-18):
   `OverallStatus []SLOOverallStatuses` with `state` (breached/warning/ok/no_data),
   `status` (SLI), `target`, `errorBudgetRemaining`, plus `all_tags`/`service_tags`/
   `env_tags`/`team_tags`, `name`, `groups`, `thresholds`.
-- Current approach: `kubernetes-deployments`
+- Prior approach: `kubernetes-deployments`
   `.../argo-rollouts/analysisTemplate/cluster-datadog-monitor.yaml` (Monitor Group
   Search via the `web` provider).
 

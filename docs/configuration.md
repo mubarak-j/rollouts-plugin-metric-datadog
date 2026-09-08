@@ -60,7 +60,7 @@ Credentials are resolved in this order (first match wins):
 
 1. **`secretRef.name`** — reads the named Kubernetes Secret. If `namespaced: false` (default), the Secret is read from the controller's namespace. If `namespaced: true`, it is read from the AnalysisRun's namespace.
 2. **Environment variables** — `DD_API_KEY` and `DD_APP_KEY` (both required; `DD_ADDRESS` optional).
-3. **`datadog` Secret in the controller namespace** — a Secret literally named `datadog` in the namespace the controller runs in. This is a common convention for the Datadog secret; the plugin reads it automatically with no additional config.
+3. **`datadog` Secret in the controller namespace** — a Secret literally named `datadog` in the namespace the controller runs in. The plugin reads it automatically with no additional config.
 
 All Secrets must have `api-key` and `app-key` keys. An optional `address` key overrides the endpoint URL.
 
