@@ -253,6 +253,14 @@ monitor:
   failureCondition: "any(result.counts.status, {.name == 'Alert' && .count > 0})"
   successCondition: "result.counts.status == nil || any(result.counts.status, {.name != 'Alert'})"
   ```
+  One field is dropped from the response: **`counts.tag`**. Datadog computes that
+  facet over the entire matched set and caps it at 1000 entries, so it scales with
+  the org rather than the query — measured against a real org it was 54KB of an
+  80KB measurement value, next to 116 bytes for the `counts.status` these
+  conditions read. Argo Rollouts retains 10 measurements per metric, so keeping it
+  cost ~800KB of AnalysisRun status per metric and could push a multi-metric
+  template past etcd's 1.5MB request limit. `counts.status`, `counts.muted`,
+  `counts.type`, `groups` and `metadata` are unchanged.
 - **by-id**: `GetMonitor`. `result` = monitor JSON; e.g.
   `successCondition: "result.overall_state == 'OK'"`.
 
