@@ -1,5 +1,10 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -10,6 +15,9 @@ jobs:
           go-version-file: go.mod
       - run: go mod download
       - run: go vet ./...
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.13.2
       - run: go test ./... -race -count=1
       - name: Check formatting
         run: test -z "$(gofmt -l .)"
