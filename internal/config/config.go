@@ -14,13 +14,13 @@ import (
 const ConfigKey = "mubarak-j/rollouts-plugin-metric-datadog"
 
 type Config struct {
-	Site           string           `json:"site,omitempty"`
-	Address        string           `json:"address,omitempty"`
-	SecretRef      *SecretRef       `json:"secretRef,omitempty"`
-	TimeoutSeconds int              `json:"timeoutSeconds,omitempty"`
-	Tags           []string         `json:"tags,omitempty"`
-	Cache          *CacheConfig     `json:"cache,omitempty"`
-	Retry          *RetryConfig     `json:"retry,omitempty"`
+	Site           string       `json:"site,omitempty"`
+	Address        string       `json:"address,omitempty"`
+	SecretRef      *SecretRef   `json:"secretRef,omitempty"`
+	TimeoutSeconds int          `json:"timeoutSeconds,omitempty"`
+	Tags           []string     `json:"tags,omitempty"`
+	Cache          *CacheConfig `json:"cache,omitempty"`
+	Retry          *RetryConfig `json:"retry,omitempty"`
 
 	Metrics *MetricsConfig `json:"metrics,omitempty"`
 	Monitor *MonitorConfig `json:"monitor,omitempty"`
