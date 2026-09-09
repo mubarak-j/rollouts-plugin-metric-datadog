@@ -43,7 +43,21 @@ func (monitorSource) Query(ctx context.Context, client *datadog.APIClient, cfg *
 	if err != nil {
 		return Result{}, err
 	}
+	dropTagFacet(m)
 	return Result{Value: m, Metadata: map[string]string{
 		"source": "monitor", "mode": "search", "resolvedQuery": query,
 	}}, nil
+}
+
+// dropTagFacet removes counts.tag from a group-search response. Datadog computes
+// that facet over the entire matched set and caps it at 1000 entries, so an
+// under-scoped query drags in every tag in the org: 54KB of an 80KB measurement
+// value against a real org, versus 116 bytes for the counts.status the documented
+// conditions actually read. Argo Rollouts retains 10 measurements per metric, so
+// keeping it costs ~800KB of AnalysisRun status and can push a multi-metric
+// template past etcd's 1.5MB request limit. The remaining facets are small.
+func dropTagFacet(m map[string]interface{}) {
+	if counts, ok := m["counts"].(map[string]interface{}); ok {
+		delete(counts, "tag")
+	}
 }
