@@ -84,6 +84,6 @@ Parsed from `metric.Provider.Plugin["mubarak-j/rollouts-plugin-metric-datadog"]`
 
 ## Deeper references
 
-- `docs/design.md` — full design spec (architecture §4, result model §6, tag filtering §7, rate-limit/scale §15, phasing §13).
+- `docs/ARCHITECTURE.md` — full design spec (architecture §4, result model §6, tag filtering §7, rate-limit/scale §15, phasing §13).
 - `docs/implementations.md` — the task-by-task Phase 1 implementation plan and applied review fixes.
 - `docs/configuration.md`, `docs/install.md`, `docs/migration-web-provider.md` — user-facing docs.
