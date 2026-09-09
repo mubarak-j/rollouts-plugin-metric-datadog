@@ -36,3 +36,6 @@ go.work.sum
 
 # SDD controller scratch (progress ledger, task briefs, review packages)
 .superpowers/
+
+# Git worktrees
+.worktrees/
