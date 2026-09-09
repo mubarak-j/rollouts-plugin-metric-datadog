@@ -123,3 +123,19 @@ func TestMetrics_KeyIsDeterministic(t *testing.T) {
 	assert.Equal(t, k1, k2)
 	assert.Equal(t, k2, k3)
 }
+
+func TestMetrics_KeyVariesByAggregator(t *testing.T) {
+	newCfg := func(agg string) *config.Config {
+		return &config.Config{
+			Metrics: &config.MetricsConfig{
+				APIVersion: "v2",
+				Queries:    map[string]string{"a": "sum:hits{*}.as_count()", "b": "sum:errs{*}.as_count()"},
+				Formula:    "(a-b)/a",
+				Aggregator: agg,
+			},
+		}
+	}
+	src := metricsSource{}
+	assert.NotEqual(t, src.Key(newCfg("")), src.Key(newCfg("sum")))
+	assert.NotEqual(t, src.Key(newCfg("sum")), src.Key(newCfg("avg")))
+}
