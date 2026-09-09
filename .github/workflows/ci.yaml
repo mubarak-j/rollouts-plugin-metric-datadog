@@ -12,7 +12,7 @@ jobs:
           go-version-file: go.mod
       - run: go mod download
       - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.13.2
       - run: go test ./... -race -count=1
