@@ -89,11 +89,20 @@ metadata:
 data:
   metricProviderPlugins: |-
     - name: "mubarak-j/rollouts-plugin-metric-datadog"
-      location: "https://github.com/mubarak-j/rollouts-plugin-metric-datadog/releases/download/v0.1.0/rollouts-plugin-metric-datadog-linux-amd64"
-      sha256: "<sha256-of-the-release-binary>"
+      location: "https://github.com/mubarak-j/rollouts-plugin-metric-datadog/releases/download/v0.1.0-alpha.1/rollouts-plugin-metric-datadog-linux-amd64"
+      sha256: "524637e552329d0e161157b5eb206a8d29cc98b0a4ba97171bb05400a02b46ec"
 ```
 
-Replace the version tag and `sha256` with the values from the release page.
+**SHA256 checksums for v0.1.0-alpha.1:**
+
+| Binary | SHA256 |
+|---|---|
+| `rollouts-plugin-metric-datadog-linux-amd64` | `524637e552329d0e161157b5eb206a8d29cc98b0a4ba97171bb05400a02b46ec` |
+| `rollouts-plugin-metric-datadog-linux-arm64` | `9b71b763e15fcaea052a38576f6bb914945d3edb40cb8d8a61566ca625ad0105` |
+| `rollouts-plugin-metric-datadog-darwin-amd64` | `b8a8fe2d4d8a34660f9b56baf5f35f59b115891c8131f407b5400ad5c060f039` |
+| `rollouts-plugin-metric-datadog-darwin-arm64` | `48fd5d1155397cea36236e1ff867cd02a4ca9e1bc42e0f9877539ee975cdd9bd` |
+
+Update the version tag and `sha256` when upgrading. The [releases page](https://github.com/mubarak-j/rollouts-plugin-metric-datadog/releases) lists all available versions.
 
 ---
 
