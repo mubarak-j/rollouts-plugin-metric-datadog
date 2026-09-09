@@ -22,7 +22,7 @@ func (metricsSource) Key(cfg *config.Config) string {
 		}
 		queriesPart += name + "=" + m.Queries[name]
 	}
-	return fmt.Sprintf("metrics|%s|%s|%s|%s|%v|%s", m.APIVersion, m.Query, queriesPart, m.Formula, cfg.Tags, m.Interval)
+	return fmt.Sprintf("metrics|%s|%s|%s|%s|%v|%s|%s", m.APIVersion, m.Query, queriesPart, m.Formula, cfg.Tags, m.Interval, m.Aggregator)
 }
 
 func (metricsSource) Query(ctx context.Context, client *datadog.APIClient, cfg *config.Config) (Result, error) {

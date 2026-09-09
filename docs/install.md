@@ -22,22 +22,31 @@ spec:
       initContainers:
         - name: copy-datadog-plugin
           image: ghcr.io/mubarak-j/rollouts-plugin-metric-datadog:latest
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
           command:
             - cp
             - /plugin/rollouts-plugin-metric-datadog
-            - /plugin-bin/mubarak-j/rollouts-plugin-metric-datadog
+            - /home/argo-rollouts/plugin-bin/datadog-plugin-src
           volumeMounts:
             - name: plugin-bin
-              mountPath: /plugin-bin
+              mountPath: /home/argo-rollouts/plugin-bin
       containers:
         - name: argo-rollouts
           # ... existing container spec ...
           volumeMounts:
             - name: plugin-bin
-              mountPath: /plugin-bin
+              mountPath: /home/argo-rollouts/plugin-bin
 ```
 
-The binary lands at `/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog` inside the controller container.
+Three details matter here:
+
+- **`mountPath` must be `/home/argo-rollouts/plugin-bin`.** The controller's working directory is `/home/argo-rollouts`, so a `file://./plugin-bin/...` location resolves relative to that, not to `/`.
+- **The copy destination must not be the location the controller installs to.** Argo Rollouts installs every plugin to `<workdir>/plugin-bin/<plugin-name>` — here `/home/argo-rollouts/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog`. If the initContainer writes the binary to that same path and the ConfigMap points `location` at it, the controller copies the file onto itself, truncating it to 0 bytes. The controller then fails with `fork/exec ...: exec format error`. Copy to a distinct name (`datadog-plugin-src`) and let the controller install from it.
+- **`runAsUser: 999`** matches the uid of the `argo-rollouts` container, so the controller can `chmod` the binary it installs. A different uid produces `failed to set file permissions of plugin: ... operation not permitted`.
+
+The initContainer writes `/home/argo-rollouts/plugin-bin/datadog-plugin-src`; the controller installs from there to `/home/argo-rollouts/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog`.
 
 ### 2. Configure the plugin in the ConfigMap
 
@@ -51,10 +60,20 @@ metadata:
 data:
   metricProviderPlugins: |-
     - name: "mubarak-j/rollouts-plugin-metric-datadog"
-      location: "file://./plugin-bin/mubarak-j/rollouts-plugin-metric-datadog"
+      location: "file://./plugin-bin/datadog-plugin-src"
 ```
 
 Restart the controller after applying the ConfigMap.
+
+Verify the handshake in the controller log before running an AnalysisRun:
+
+```
+Copied plugin from /home/argo-rollouts/plugin-bin/datadog-plugin-src to /home/argo-rollouts/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog
+plugin: plugin started: path=/home/argo-rollouts/plugin-bin/mubarak-j/rollouts-plugin-metric-datadog pid=15
+plugin: using plugin: version=1
+```
+
+If the two paths in `Copied plugin from ... to ...` are identical, the `location` collides with the install path — see the notes above.
 
 ---
 
