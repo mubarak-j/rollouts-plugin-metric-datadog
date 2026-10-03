@@ -1,5 +1,8 @@
 # rollouts-plugin-metric-datadog
 
+> [!NOTE]
+> This project was donated to argoproj-labs. See the [upstream repository](https://github.com/argoproj-labs/rollouts-plugin-metric-datadog) for further development.
+
 An [Argo Rollouts](https://argoproj.github.io/argo-rollouts/) metric plugin that gates canary and blue-green rollouts on Datadog observability data. Phase 1 supports three sources: **metrics** (v1 and v2 scalar queries with multi-query formulas), **monitor** (group search or by-id), and **SLO** (search or by-id history). The plugin resolves Datadog credentials in-process, merges structured `tags` into queries automatically, and provides shared rate-limiting and short-TTL caching across concurrent rollout waves. Built and tested against Argo Rollouts v1.9.0.
 
 ## Supported sources (Phase 1)
@@ -12,16 +15,16 @@ An [Argo Rollouts](https://argoproj.github.io/argo-rollouts/) metric plugin that
 
 ## Documentation
 
-- [docs/install.md](docs/install.md) — install via initContainer or URL download; RBAC notes
-- [docs/configuration.md](docs/configuration.md) — full config schema, credential resolution, site values, result shapes
-- [docs/migration-web-provider.md](docs/migration-web-provider.md) — migrating from the built-in `web` provider
+- [docs/install.md](docs/install.md): install via initContainer or URL download, RBAC notes
+- [docs/configuration.md](docs/configuration.md): full configuration schema, credential resolution, site values, result shapes
+- [docs/migration-web-provider.md](docs/migration-web-provider.md): migrating from the built-in `web` provider
 
 ## Examples
 
-- [examples/metrics-analysistemplate.yaml](examples/metrics-analysistemplate.yaml) — error-rate gate using v2 multi-query formula
-- [examples/monitor-analysistemplate.yaml](examples/monitor-analysistemplate.yaml) — monitor group search gate
-- [examples/slo-analysistemplate.yaml](examples/slo-analysistemplate.yaml) — SLO search gate
-- [examples/multi-source-analysistemplate.yaml](examples/multi-source-analysistemplate.yaml) — monitors + SLOs combined (OR-of-failures)
+- [examples/metrics-analysistemplate.yaml](examples/metrics-analysistemplate.yaml): error-rate gate using v2 multi-query formula
+- [examples/monitor-analysistemplate.yaml](examples/monitor-analysistemplate.yaml): monitor group search gate
+- [examples/slo-analysistemplate.yaml](examples/slo-analysistemplate.yaml): SLO search gate
+- [examples/multi-source-analysistemplate.yaml](examples/multi-source-analysistemplate.yaml): monitors and SLOs combined (OR-of-failures)
 
 ## Quick start
 
